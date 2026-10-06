@@ -1,0 +1,53 @@
+# Base44 development environment for github/docs (docs.github.com).
+#
+# Runs the repo's OWN dev server (`npm start` -> nodemon + Next.js dev) from the
+# bind-mounted source tree, so edits on the host are picked up without rebuilds.
+#
+# Public URL: host port 3000 -> container port 4000 (the app's own default PORT).
+services:
+  web:
+    image: node:24-bookworm-slim
+    working_dir: /app
+    # Install/sync deps from the current lockfile once the bind mount is ready,
+    # then hand off to the dev server (nodemon, which restarts on TS changes).
+    command:
+      - sh
+      - -ec
+      - |
+        if [ ! -d node_modules ] || [ package-lock.json -nt node_modules/.package-lock.json ]; then
+          npm ci --no-audit --no-fund
+        fi
+        exec npm start
+    environment:
+      # The app's custom server reads PORT (defaults to 4000).
+      - PORT=4000
+      - NODE_ENV=development
+      # English-only: the public repo has no `translations/` checkout.
+      - ENABLED_LANGUAGES=en
+      # The tree + content warmup is large; give V8 more room than the default.
+      - NODE_OPTIONS=--max-old-space-size=4096
+      # Used by next.config.ts to allow the proxied preview origin for dev assets/HMR.
+      - BASE44_PUBLIC_HOST_SUFFIX=${BASE44_PUBLIC_HOST_SUFFIX}
+    env_file:
+      # Optional external-service credentials delivered by the platform
+      # (e.g. CSE_COPILOT_SECRET for AI search, ELASTICSEARCH_URL for local search).
+      # Absent by default: the app boots and renders fine without them.
+      - path: /run/base44/app.env
+        required: false
+    volumes:
+      - .:/app
+    ports:
+      - "3000:4000"
+    restart: on-failure
+    healthcheck:
+      # Probes the app's own /healthcheck route (src/frame/middleware/healthcheck.ts).
+      # Generous start period: first boot warms the whole content tree.
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:4000/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 20s
+      timeout: 10s
+      retries: 15
+      start_period: 300s

@@ -15,6 +15,12 @@ const config: NextConfig = {
   // Transpile @primer/react so Next's webpack can process its CSS and other assets
   // This ensures CSS in node_modules/@primer/react is handled by the app's loaders.
   transpilePackages: ['@primer/react'],
+
+  // In development the app runs behind a proxy on a public preview hostname.
+  // Next gates dev assets/HMR on the request Origin, so allow that origin.
+  allowedDevOrigins: process.env.BASE44_PUBLIC_HOST_SUFFIX
+    ? [`3000-${process.env.BASE44_PUBLIC_HOST_SUFFIX}`]
+    : undefined,
   // speed up production `next build` by ignoring typechecking during that step of build.
   // type-checking still occurs in the Dockerfile build
   typescript: {

@@ -1,0 +1,27 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/healthcheck",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    {
+      "name": "CSE_COPILOT_SECRET",
+      "description": "HMAC secret for GitHub's CSE Copilot endpoint. Only needed for the AI-answers search flow; general search works without it.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "ELASTICSEARCH_URL",
+      "description": "URL of a local Elasticsearch service. When unset, search requests are proxied to GitHub's production endpoint, so it is optional.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "HYDRO_SECRET",
+      "description": "Secret for sending analytics events to GitHub's Hydro endpoint in local development. Analytics events are skipped when unset.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "HYDRO_ENDPOINT",
+      "description": "Hydro endpoint that receives local analytics events, paired with HYDRO_SECRET.",
+      "requiredAtBoot": false
+    }
+  ]
+}
